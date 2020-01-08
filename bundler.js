@@ -11,7 +11,7 @@ async function getDatapack(datapacks) {
     for (const module of modules) {
         for (const file of module) {
             let content = file.content;
-            if (file.path.match(".+/tags/.+/.+\.json")) {
+            if (file.path.match("data/[^/]+/tags/.+/.+\.json")) {
                 const oldValues = tags[file.path];
                 const newContent = JSON.parse(file.content);
                 if (!oldValues || newContent.replace === true) {
@@ -28,7 +28,8 @@ async function getDatapack(datapacks) {
         }
     }
     const content = await zip.generateAsync({ type: "blob" })
-    saveAs(content, `datapack.zip`);
+    const name = params.get("name") || datapacks[0].split("/").slice(-1);
+    saveAs(content, `${name}.zip`);
 }
 
 async function getModule(datapack) {
