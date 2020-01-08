@@ -1,4 +1,3 @@
-const api = "https://api.github.com/";
 const params = new URLSearchParams(window.location.search);
 
 getDatapack(params.get("modules").split("..."));
@@ -27,7 +26,7 @@ async function getDatapack(datapacks) {
             zip.file(file.path, content);
         }
     }
-    const content = await zip.generateAsync({ type: "blob" })
+    const content = await zip.generateAsync({ type: "blob" });
     const name = params.get("name") || datapacks[0].split("/").slice(-1);
     saveAs(content, `${name}.zip`);
 }
