@@ -1,10 +1,37 @@
 const api = "https://api.github.com/";
 const params = new URLSearchParams(window.location.search);
 
-const datapack = params.get("d").split("/");
-getDatapack(datapack);
+getDatapack(params.get("modules").split("..."));
 
-async function getDatapack(datapack) {
+async function getDatapack(datapacks) {
+    const promises = datapacks.map(e => getModule(e.split("/")));
+    const modules = await Promise.all(promises.reverse());
+    let zip = new JSZip();
+    let tags = {};
+    for (const module of modules) {
+        for (const file of module) {
+            let content = file.content;
+            if (file.path.match(".+/tags/.+/.+\.json")) {
+                const oldValues = tags[file.path];
+                const newContent = JSON.parse(file.content);
+                if (!oldValues || newContent.replace === true) {
+                    tags[file.path] = newContent.values;
+                } else {
+                    let values = new Set(oldValues);
+                    newContent.values.forEach(v => values.add(v));
+                    values = Array.from(values);
+                    content = JSON.stringify({ values }, null, 2);
+                    tags[file.path] = values;
+                }
+            }
+            zip.file(file.path, content);
+        }
+    }
+    const content = await zip.generateAsync({ type: "blob" })
+    saveAs(content, `datapack.zip`);
+}
+
+async function getModule(datapack) {
     const repo = datapack.slice(0, 2).join("/");
     const root = datapack.slice(2);
     let sha;
@@ -20,13 +47,7 @@ async function getDatapack(datapack) {
     const response = await fetch(`https://api.github.com/repos/${repo}/git/trees/${sha}?recursive=1`);
     const tree = (await response.json()).tree;
     const files = await getTree(repo, root.join("/"), tree.filter(e => e.size !== undefined));
-    console.log(files);
-    var zip = new JSZip();
-    for (const f of files) {
-        zip.file(f.path, f.content);
-    }
-    const content = await zip.generateAsync({ type: "blob" })
-    saveAs(content, `${root.slice(-1)}.zip`);
+    return files;
 }
 
 async function getTree(repo, root, tree) {
