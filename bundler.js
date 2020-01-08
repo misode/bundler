@@ -21,17 +21,23 @@ async function getDatapack(datapack) {
     const tree = (await response.json()).tree;
     const files = await getTree(repo, root.join("/"), tree.filter(e => e.size !== undefined));
     console.log(files);
+    var zip = new JSZip();
+    for (const f of files) {
+        zip.file(f.path, f.content);
+    }
+    const content = await zip.generateAsync({ type: "blob" })
+    saveAs(content, `${root.slice(-1)}.zip`);
 }
 
 async function getTree(repo, root, tree) {
-    if (root !== "") root += "/";
-    const promises = tree.map(e => getFile(repo, root + e.path));
+    const promises = tree.map(e => getFile(repo, root, e.path));
     const files = await Promise.all(promises);
     return files;
 }
 
-async function getFile(repo, path) {
-    const response = await fetch(`https://raw.githubusercontent.com/${repo}/master/${path}`);
+async function getFile(repo, root, path) {
+    if (root !== "") root += "/";
+    const response = await fetch(`https://raw.githubusercontent.com/${repo}/master/${root}${path}`);
     const content = await response.text();
-    return {path, content};
+    return { path, content };
 }
