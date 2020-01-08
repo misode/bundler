@@ -29,6 +29,7 @@ async function getDatapack(datapacks) {
     const content = await zip.generateAsync({ type: "blob" });
     const name = params.get("name") || datapacks[0].split("/").slice(-1);
     saveAs(content, `${name}.zip`);
+    document.getElementById("progressMessage").innerHTML = "Download ready!";
 }
 
 async function getModule(datapack) {
